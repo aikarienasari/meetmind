@@ -21,8 +21,11 @@ MeetMind adalah aplikasi web PWA yang membantu tim merekam jalannya rapat, mengh
 ### Backend
 | Layer | Teknologi |
 |-------|-----------|
-| AI / Analisis | [Google Gemini](https://ai.google.dev/) |
-| Database & Auth | [Supabase](https://supabase.com/) (PostgreSQL) |
+| Framework | [FastAPI](https://fastapi.tiangolo.com/) |
+| Speech-to-Text | [OpenAI Whisper](https://github.com/openai/whisper) |
+| AI / Analisis | [Google Gemini](https://ai.google.dev/) + [Groq API](https://groq.com/) |
+| Task Queue | [Celery](https://docs.celeryq.dev/) + [Redis](https://redis.io/) |
+| Database & Auth | [Supabase](https://supabase.com/) (PostgreSQL + RLS) |
 | Hosting BE | [Railway](https://railway.app/) |
 | Real-time Transcription | WebSocket |
 
@@ -121,11 +124,13 @@ src/
 3. Login berhasil     → Supabase memberikan user.id (UUID)
 4. Mulai Rapat        → POST /api/v1/meetings/ dengan user_id
 5. Backend simpan     → Return meeting_id
-6. Connect WebSocket  → Stream audio real-time
-7. Stop rekaman       → Backend kirim full_transcript
-8. AI analisis        → POST /api/v1/meetings/{id}/finish
-9. Tampilkan hasil    → Summary + rekomendasi + action items
-10. History           → GET /api/v1/meetings/user/{user_id}
+6. Connect WebSocket  → Stream audio real-time ke backend
+7. Backend proses     → Audio → Whisper Model → Text (transkripsi)
+8. Stop rekaman       → Backend kirim full_transcript ke FE
+9. AI analisis        → Text → Gemini API → Summary + rekomendasi + action items
+10. Simpan hasil      → Summary disimpan ke Supabase
+11. Tampilkan hasil   → FE render ringkasan rapat
+12. History           → GET /api/v1/meetings/user/{user_id}
 ```
 
 ---
