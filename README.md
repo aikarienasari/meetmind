@@ -1,5 +1,6 @@
 # 🧠 MeetMind
-
+[![CI Frontend](https://github.com/aikarienasari/meetmind/actions/workflows/ci-frontend.yml/badge.svg?branch=main)](https://github.com/aikarienasari/meetmind/actions/workflows/ci-frontend.yml)
+[![CI Backend](https://github.com/aikarienasari/meetmind/actions/workflows/ci-backend.yml/badge.svg?branch=main)](https://github.com/aikarienasari/meetmind/actions/workflows/ci-backend.yml)
 > AI-powered meeting assistant — rekam, transkripsi, dan analisis rapat secara otomatis.
 
 MeetMind adalah aplikasi web PWA yang membantu tim merekam jalannya rapat, menghasilkan transkripsi real-time, lalu menganalisisnya menggunakan AI untuk menghasilkan ringkasan, rekomendasi, dan action items secara otomatis.
