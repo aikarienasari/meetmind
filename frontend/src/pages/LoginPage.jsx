@@ -1,7 +1,11 @@
+import LoginForm from "../components/auth/LoginForm.jsx";
+import { login } from "../services/authService.js";
+import { useNavigate } from "react-router-dom";
+
 export default function LoginPage() {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <h1 className="text-3xl font-bold">Login</h1>
-    </div>
-  )
+  const navigate = useNavigate();
+  const handleLogin = async (data) => {
+    return await login(data);
+  };
+  return <LoginForm onLogin={handleLogin} onBack={() => navigate('/')}/>;
 }
