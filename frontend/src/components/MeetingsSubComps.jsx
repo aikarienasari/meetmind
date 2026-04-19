@@ -120,6 +120,7 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [localMeetingId, setLocalMeetingId] = useState(propMeetingId);
+  const [expandedSections, setExpandedSections] = useState({});
 
   // Update local meeting ID when prop changes
   useEffect(() => {
@@ -129,6 +130,13 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
   }, [propMeetingId]);
 
   const activeTranscript = uploadedTranscript || transcript;
+
+  const toggleExpand = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const handleAnalyze = async () => {
     if (!activeTranscript.trim()) return;
@@ -248,6 +256,60 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
     );
   };
 
+  const renderTranscript = (transcript, title, sectionKey) => {
+    if (!transcript) return null;
+    
+    const isExpanded = expandedSections[sectionKey];
+    const preview = transcript.substring(0, 300) + '...';
+    const shouldTruncate = transcript.length > 300;
+    
+    return (
+      <>
+        <h4>{title}:</h4>
+        <div className="transcript-content">
+          <pre style={{ 
+            fontSize: '0.85em', 
+            whiteSpace: 'pre-wrap',
+            backgroundColor: 'rgba(0,0,0,0.1)',
+            padding: '10px',
+            borderRadius: '4px',
+            maxHeight: isExpanded ? 'none' : '150px',
+            overflow: 'hidden'
+          }}>
+            {isExpanded ? transcript : preview}
+          </pre>
+          {shouldTruncate && (
+            <button 
+              onClick={() => toggleExpand(sectionKey)}
+              className="btn btn-toggle"
+              style={{ marginTop: '5px' }}
+            >
+              {isExpanded ? "▲ Show Less" : "▼ Show More"}
+            </button>
+          )}
+        </div>
+      </>
+    );
+  };
+
+  // Fungsi untuk merender speakers detected
+  const renderSpeakers = (speakers) => {
+    if (!speakers || Object.keys(speakers).length === 0) return null;
+    
+    return (
+      <>
+        <h4>Speakers Detected:</h4>
+        <ul>
+          {Object.entries(speakers).map(([speakerId, speakerName]) => (
+            <li key={speakerId}>
+              <strong>{speakerId}:</strong> {speakerName}
+            </li>
+          ))}
+        </ul>
+      </>
+    );
+  };
+
   return (
     <div className="action-row">
       {recording && (
@@ -294,10 +356,28 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
                 </>
               )}
               
-              {result.full_transcript && (
+               {/* Full Transcript */}
+              {result.full_transcript && renderTranscript(
+                result.full_transcript, 
+                "Full Transcript", 
+                "full_transcript"
+              )}
+              
+              {/* Diarized Transcript */}
+              {result.diarized_transcript && renderTranscript(
+                result.diarized_transcript, 
+                "Diarized Transcript", 
+                "diarized_transcript"
+              )}
+              
+              {/* Speakers Detected */}
+              {result.speakers_detected && renderSpeakers(result.speakers_detected)}
+              
+              {/* Created At */}
+              {result.created_at && (
                 <>
-                  <h4>Transkrip Lengkap:</h4>
-                  <p style={{fontSize: '0.85em'}}>{result.full_transcript.substring(0, 200)}...</p>
+                  <h4>Created At:</h4>
+                  <p>{new Date(result.created_at).toLocaleString()}</p>
                 </>
               )}
             </div>
