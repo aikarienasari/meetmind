@@ -62,7 +62,10 @@ export default function LoginForm({ onBack, onLogin }) {
 
     try {
       const res = await onLogin(form);
-      localStorage.setItem('token', res.token);
+      
+      // Store both token and user_id
+      localStorage.setItem('token', res.access_token);
+      localStorage.setItem('userId', res.user_id);
 
       toast.success('Login berhasil');
       navigate('/');
