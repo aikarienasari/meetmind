@@ -30,13 +30,15 @@ export function RecordButton({ recording, onClick }) {
 }
 
 export function TranscriptBox({ value }) {
+  const displayValue = value || "Transkrip muncul setelah stop rekam...";
+  
   return (
     <div className="section">
       <p className="section-label">TRANSKIP:</p>
       <textarea
         readOnly
         className="transcript-area"
-        value={value}
+        value={displayValue}
         placeholder="Transkrip muncul setelah stop rekam..."
       />
     </div>
@@ -139,7 +141,11 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
   };
 
   const handleAnalyze = async () => {
-    if (!activeTranscript.trim()) return;
+    if (!activeTranscript.trim()) {
+      // Jika tidak ada transcript, beri pesan yang jelas
+      setError("Tidak ada transkrip untuk dianalisis. Lakukan rekaman terlebih dahulu.");
+      return;
+    }
     setLoading(true);
     setResult(null);
     setError(null);

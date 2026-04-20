@@ -4,32 +4,74 @@ import { useWebSocketRecorder } from "../hooks/useWebSocketRecorder.js";
 
 export default function MeetingsPage() {
   const [source, setSource] = useState("mic");
-  const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [transcript, setTranscript] = useState("");
   const [uploadedTranscript, setUploadedTranscript] = useState("");
   const [meetingTitle, setMeetingTitle] = useState("Meeting " + new Date().toLocaleDateString());
   const [meetingId, setMeetingId] = useState(null);
   const [wsError, setWsError] = useState(null);
-  
-  const timerRef = useRef(null);
+  const [isWsRecording, setIsWsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // Tambahkan ini
 
-  // Initialize WebSocket recorder
-  const { isRecording: isWsRecording, startRecording: startWsRecording, stopRecording: stopWsRecording } = 
-    useWebSocketRecorder({
-      meetingId,
-      onTranscriptUpdate: (newText) => {
-        setTranscript(prev => prev + " " + newText);
-      },
-      onError: (error) => {
-        setWsError(error);
-        console.error("WebSocket recording error:", error);
+  const timerRef = useRef(null);
+  const wsRef = useRef(null);
+
+  const wsRecorder = useWebSocketRecorder({
+    meetingId,
+    onTranscriptUpdate: (newText) => {
+      // Update transcript real-time jika backend mengirimkannya
+      setTranscript(prev => prev + (prev ? " " : "") + newText);
+    },
+    onError: (error) => {
+      setWsError(error);
+      console.error("WebSocket recording error:", error);
+      setIsWsRecording(false);
+      setIsProcessing(false); // Reset processing state
+    },
+    onStart: () => {
+      console.log("Recording started");
+      setIsWsRecording(true);
+      setWsError(null);
+      setIsProcessing(false); // Reset processing state
+    },
+    onStop: (data) => {
+      console.log("Recording stopped with data:", data);
+      setIsWsRecording(false);
+      setIsProcessing(false); // Reset processing state
+      
+      // Jika session_ended diterima, otomatis kirim ke AI
+      if (data && data.sessionEnded) {
+        console.log("Session ended successfully");
+        // Transcript sudah ada di state transcript dari onTranscriptUpdate
       }
-    });
+    }
+  });
+  
+  useEffect(() => {
+    if (isWsRecording) {
+      timerRef.current = setInterval(()=>{
+        setSeconds(prev => prev+1);
+      }, 1000);
+    } else if (timerRef.current){
+      clearInterval(timerRef.current);
+    }
+
+    return()=>{
+      if(timerRef.current){
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [isWsRecording]);
 
   const startRecording = async () => {
+    // Reset transcript jika ini recording baru
+    setTranscript("");
+    setSeconds(0);
+    setIsProcessing(false); // Reset processing state
+    
     // Create meeting first if not exists
-    if (!meetingId) {
+    let newMeetingId = meetingId;
+    if (!newMeetingId) {
       const userId = localStorage.getItem('userId');
       if (!userId) {
         alert('Silakan login terlebih dahulu');
@@ -53,25 +95,27 @@ export default function MeetingsPage() {
         if (!res.ok) throw new Error('Gagal membuat meeting');
         
         const data = await res.json();
-        setMeetingId(data.meeting_id);
-        
-        // Setelah mendapat meeting ID, mulai WebSocket recording
-        setTimeout(() => {
-          startWsRecording();
-        }, 100);
+        newMeetingId = data.meeting_id;
+        setMeetingId(newMeetingId);
       } catch (err) {
         console.error("Error creating meeting:", err);
         alert("Gagal membuat meeting: " + err.message);
         return;
       }
-    } else {
-      // Jika meeting ID sudah ada, langsung mulai recording
-      startWsRecording();
+    }
+
+    // Mulai WebSocket recording
+    try {
+      wsRecorder.startRecording();
+    } catch (err) {
+      console.error("Error starting recording:", err);
+      setWsError("Gagal memulai recording: " + err.message);
     }
   };
 
   const stopRecording = () => {
-    stopWsRecording();
+    setIsProcessing(true); // Set processing state saat stop
+    wsRecorder.stopRecording();
   };
 
   const toggleRecording = () => {
@@ -81,12 +125,6 @@ export default function MeetingsPage() {
       startRecording();
     }
   };
-
-  useEffect(() => () => {
-    if (isWsRecording) {
-      stopWsRecording();
-    }
-  }, [isWsRecording, stopWsRecording]);
 
   const sources = [
     { id: "mic", icon: "🎙", title: "Mic Only", subtitle: "Rekam suara dari mikrofon perangkat" },
@@ -134,8 +172,9 @@ export default function MeetingsPage() {
               recording={isWsRecording} 
               onClick={toggleRecording} 
             />
-            {!isWsRecording && <p className="rec-hint">klik untuk mulai rekam</p>}
+            {!isWsRecording && !isProcessing && <p className="rec-hint">klik untuk mulai rekam</p>}
             {isWsRecording && <p className="rec-hint recording-hint">● Sedang merekam…</p>}
+            {isProcessing && <p className="rec-hint recording-hint">● Memproses rekaman…</p>}
             {wsError && <p className="rec-hint" style={{color: 'red'}}>{wsError}</p>}
           </div>
 
@@ -146,7 +185,7 @@ export default function MeetingsPage() {
           <DropZone
             onFile={setUploadedTranscript}
             meetingId={meetingId || ""}
-            onMeetingIdChange={(setMeetingId) => {}}
+            onMeetingIdChange={setMeetingId}
           />
 
           <AIPanel
@@ -462,5 +501,14 @@ const css = `
 
   .ai-output li {
     margin-bottom: 6px;
+  }
+  /* Recording status indicators */
+  .rec-hint.recording-hint {
+    animation: pulse-text 2s infinite;
+  }
+  
+  @keyframes pulse-text {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
   }
 `;
