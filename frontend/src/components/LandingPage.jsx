@@ -103,7 +103,7 @@ export default function LandingPage() {
           padding: '12px 36px', borderRadius: 30, border: '2px solid #fff',
           background: 'transparent', color: '#fff', fontWeight: 700, fontSize: 16,
           cursor: 'pointer', letterSpacing: 0.5
-        }}>
+        }} onClick={()=>navigate('/meetings')}>
           Start Meeting!
         </button>
       </section>

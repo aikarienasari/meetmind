@@ -262,41 +262,56 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
     );
   };
 
-  const renderTranscript = (transcript, title, sectionKey) => {
-    if (!transcript) return null;
-    
-    const isExpanded = expandedSections[sectionKey];
-    const preview = transcript.substring(0, 300) + '...';
-    const shouldTruncate = transcript.length > 300;
-    
-    return (
-      <>
-        <h4>{title}:</h4>
-        <div className="transcript-content">
-          <pre style={{ 
-            fontSize: '0.85em', 
-            whiteSpace: 'pre-wrap',
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            padding: '10px',
-            borderRadius: '4px',
-            maxHeight: isExpanded ? 'none' : '150px',
-            overflow: 'hidden'
-          }}>
-            {isExpanded ? transcript : preview}
-          </pre>
-          {shouldTruncate && (
-            <button 
-              onClick={() => toggleExpand(sectionKey)}
-              className="btn btn-toggle"
-              style={{ marginTop: '5px' }}
-            >
-              {isExpanded ? "▲ Show Less" : "▼ Show More"}
-            </button>
-          )}
-        </div>
-      </>
-    );
-  };
+const renderTranscript = (transcript, title, sectionKey) => {
+  if (!transcript) return null;
+  
+  const isExpanded = expandedSections[sectionKey];
+  // Kurangi jumlah karakter untuk preview agar lebih jelas
+  const previewLength = 500; // Lebih panjang dari sebelumnya
+  const preview = transcript.length > previewLength 
+    ? transcript.substring(0, previewLength) + '...'
+    : transcript;
+  const shouldTruncate = transcript.length > previewLength;
+  
+  return (
+    <>
+      <h4>{title}:</h4>
+      <div className="transcript-content">
+        <pre style={{ 
+          fontSize: '0.85em', 
+          whiteSpace: 'pre-wrap',
+          backgroundColor: 'rgba(0,0,0,0.1)',
+          padding: '10px',
+          borderRadius: '4px',
+          maxHeight: isExpanded ? 'none' : '200px', // Tinggi maksimal yang lebih besar
+          overflow: 'auto', // Ganti ke auto agar bisa scroll
+          border: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          {isExpanded ? transcript : preview}
+        </pre>
+        {shouldTruncate && (
+          <button 
+            onClick={() => toggleExpand(sectionKey)}
+            className="btn btn-toggle"
+            style={{ 
+              marginTop: '5px',
+              backgroundColor: 'rgba(52,152,219,0.2)',
+              color: '#3498db',
+              border: '1px solid #3498db',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              fontSize: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            {isExpanded ? "▲ Tampilkan Lebih Sedikit" : "▼ Tampilkan Selengkapnya"}
+          </button>
+        )}
+      </div>
+    </>
+  );
+};
 
   // Fungsi untuk merender speakers detected
   const renderSpeakers = (speakers) => {

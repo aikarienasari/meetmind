@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { SourceCard, Timer, RecordButton, TranscriptBox, DropZone, AIPanel } from "../components/MeetingsSubComps.jsx";
 import { useWebSocketRecorder } from "../hooks/useWebSocketRecorder.js";
+import { useNavigate } from "react-router-dom";
+import { backBtn } from "../styles/authStyles.js";
 
 export default function MeetingsPage() {
   const [source, setSource] = useState("mic");
@@ -12,7 +14,8 @@ export default function MeetingsPage() {
   const [wsError, setWsError] = useState(null);
   const [isWsRecording, setIsWsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false); // Tambahkan ini
-
+  
+  const navigate = useNavigate();
   const timerRef = useRef(null);
   const wsRef = useRef(null);
 
@@ -135,6 +138,7 @@ export default function MeetingsPage() {
   return (
     <>
       <style>{css}</style>
+      <div onClick={() => navigate('/')} style={backBtn}>←</div>
       <div className="page">
         <div className="card">
           {/* Step label */}
