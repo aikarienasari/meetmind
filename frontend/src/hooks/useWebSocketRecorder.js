@@ -5,7 +5,8 @@ export function useWebSocketRecorder({
   onTranscriptUpdate, 
   onError,
   onStart,
-  onStop
+  onStop,
+  source = "mic"
 }) {
   const [isRecording, setIsRecording] = useState(false);
   const websocketRef = useRef(null);
@@ -13,24 +14,50 @@ export function useWebSocketRecorder({
   const streamRef = useRef(null);
   const audioChunksRef = useRef([]);
 
-  const API_KEY = "key1";
+  const API_KEY = import.meta.env.VITE_API_KEY;
 
-  const startRecording = async () => {
+  const startRecording = async (overrideMeetingId) => {
     try {
-      if (!meetingId) {
+      const activeMeetingId = overrideMeetingId || meetingId;
+      if (!activeMeetingId) {
         throw new Error("Meeting ID diperlukan untuk memulai recording");
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      let stream;
+      if (source === "mic") {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } else if (source === "tab") {
+        stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      } else if (source === "both") {
+        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const tabStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        
+        const audioContext = new AudioContext();
+        const dest = audioContext.createMediaStreamDestination();
+        
+        if (micStream.getAudioTracks().length > 0) {
+          const micSource = audioContext.createMediaStreamSource(micStream);
+          micSource.connect(dest);
+        }
+        
+        if (tabStream.getAudioTracks().length > 0) {
+          const tabSource = audioContext.createMediaStreamSource(tabStream);
+          tabSource.connect(dest);
+        }
+        
+        stream = dest.stream;
+        stream.customTracksToStop = [...micStream.getTracks(), ...tabStream.getTracks()];
+      }
+
       streamRef.current = stream;
       
-      const wsUrl = `ws://localhost:8000/api/v1/ws/transcribe/${meetingId}?api_key=${API_KEY}`;
+      const wsUrl = `${import.meta.env.VITE_WS_URL}/api/v1/ws/transcribe/${activeMeetingId}?api_key=${API_KEY}`;
       const ws = new WebSocket(wsUrl);
       
       websocketRef.current = ws;
       
       ws.onopen = () => {
-        console.log("WebSocket connected for meeting:", meetingId);
+        console.log("WebSocket connected for meeting:", activeMeetingId);
         
         try {
           const mediaRecorder = new MediaRecorder(stream);
@@ -166,6 +193,11 @@ export function useWebSocketRecorder({
     }
     
     if (streamRef.current) {
+      if (streamRef.current.customTracksToStop) {
+        streamRef.current.customTracksToStop.forEach(track => {
+          try { track.stop(); } catch(e) {}
+        });
+      }
       streamRef.current.getTracks().forEach(track => {
         try {
           track.stop();

@@ -13,10 +13,12 @@ export function MeetingHistory() {
           throw new Error('User tidak ditemukan');
         }
 
-        const API_KEY = "key1";
-        const res = await fetch(`http://localhost:8000/api/v1/meetings/user/${userId}`, {
+        const API_KEY = import.meta.env.VITE_API_KEY;
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/meetings/user/${userId}`, {
           headers: {
             "X-API-Key": API_KEY,
+            "Authorization": `Bearer ${token}`,
           }
         });
 

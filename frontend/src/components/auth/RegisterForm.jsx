@@ -8,7 +8,8 @@ export default function RegisterForm({ onBack, onRegister }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     email: '',
-    password: ''
+    password: '',
+    confirm_password: ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -36,6 +37,9 @@ export default function RegisterForm({ onBack, onRegister }) {
       case 'password':
         if (value.length < 6) return 'Minimal 6 karakter';
         break;
+      case 'confirm_password':
+        if (value !== form.password) return 'Password tidak cocok';
+        break;
     }
     return '';
   };
@@ -49,6 +53,10 @@ export default function RegisterForm({ onBack, onRegister }) {
 
     if (form.password.length < 6) {
       newErrors.password = 'Minimal 6 karakter';
+    }
+
+    if (form.confirm_password !== form.password) {
+      newErrors.confirm_password = 'Password tidak cocok';
     }
 
     setErrors(newErrors);
@@ -90,6 +98,15 @@ export default function RegisterForm({ onBack, onRegister }) {
           value={form.password}
           onChange={handleChange}
           error={errors.password}
+        />
+
+        <Input
+          label="konfirmasi password"
+          type="password"
+          name="confirm_password"
+          value={form.confirm_password}
+          onChange={handleChange}
+          error={errors.confirm_password}
         />
 
         <button disabled={loading} style={btn} onClick={handleSubmit}>

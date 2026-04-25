@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
-const BACKEND_URL = 'http://localhost:8000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 export function SourceCard({ icon, title, subtitle, selected, onClick }) {
   return (
@@ -45,7 +45,7 @@ export function TranscriptBox({ value }) {
   );
 }
 
-export function DropZone({ onFile, meetingId, onMeetingIdChange }) {
+export function DropZone({ onFile, meetingId, onMeetingIdChange, onAudioUpload }) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState(null);
   const inputRef = useRef();
@@ -53,9 +53,14 @@ export function DropZone({ onFile, meetingId, onMeetingIdChange }) {
   const handleFile = (file) => {
     if (!file) return;
     setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => onFile(e.target.result);
-    reader.readAsText(file);
+    
+    if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|wav|m4a|webm|ogg)$/i)) {
+      if (onAudioUpload) onAudioUpload(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => onFile(e.target.result);
+      reader.readAsText(file);
+    }
   };
 
   const onDrop = useCallback((e) => {
@@ -94,7 +99,7 @@ export function DropZone({ onFile, meetingId, onMeetingIdChange }) {
         <input
           ref={inputRef}
           type="file"
-          accept=".txt,.json,.vtt,.srt"
+          accept=".txt,.json,.vtt,.srt,.mp3,.wav,.m4a,.webm,.ogg"
           style={{ display: "none" }}
           onChange={(e) => handleFile(e.target.files[0])}
         />
@@ -107,8 +112,8 @@ export function DropZone({ onFile, meetingId, onMeetingIdChange }) {
         ) : (
           <>
             <span className="drop-icon">⬆</span>
-            <span className="drop-main">Seret & lepas transkrip di sini</span>
-            <span className="drop-sub">atau klik untuk pilih file (.txt, .json, .vtt, .srt)</span>
+            <span className="drop-main">Seret & lepas file di sini</span>
+            <span className="drop-sub">atau klik untuk pilih transkrip/audio</span>
           </>
         )}
       </div>
@@ -161,13 +166,14 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
           throw new Error('User ID tidak ditemukan. Silakan login kembali.');
         }
 
-        const API_KEY = "key1";
-        
         // Create new meeting
+        const token = localStorage.getItem('token');
+        const API_KEY = import.meta.env.VITE_API_KEY;
         const createRes = await fetch(`${BACKEND_URL}/api/v1/meetings/`, {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
             "X-API-Key": API_KEY,
           },
           body: JSON.stringify({
@@ -188,7 +194,8 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
       }
 
       // Now finish the meeting with transcript
-      const API_KEY = "key1";
+      const token = localStorage.getItem('token');
+      const API_KEY = import.meta.env.VITE_API_KEY;
       
       const payload = {
         meeting_id: actualMeetingId,
@@ -199,6 +206,7 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
           "X-API-Key": API_KEY,
         },
         body: JSON.stringify(payload),

@@ -21,6 +21,7 @@ export default function MeetingsPage() {
 
   const wsRecorder = useWebSocketRecorder({
     meetingId,
+    source,
     onTranscriptUpdate: (newText) => {
       // Update transcript real-time jika backend mengirimkannya
       setTranscript(prev => prev + (prev ? " " : "") + newText);
@@ -82,11 +83,13 @@ export default function MeetingsPage() {
       }
       
       try {
-        const API_KEY = "key1";
-        const res = await fetch('http://localhost:8000/api/v1/meetings/', {
+        const token = localStorage.getItem('token');
+        const API_KEY = import.meta.env.VITE_API_KEY;
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/meetings/`, {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
             "X-API-Key": API_KEY,
           },
           body: JSON.stringify({
@@ -109,7 +112,7 @@ export default function MeetingsPage() {
 
     // Mulai WebSocket recording
     try {
-      wsRecorder.startRecording();
+      wsRecorder.startRecording(newMeetingId);
     } catch (err) {
       console.error("Error starting recording:", err);
       setWsError("Gagal memulai recording: " + err.message);
@@ -129,6 +132,59 @@ export default function MeetingsPage() {
     }
   };
 
+  const handleAudioUpload = async (file) => {
+    try {
+      setIsProcessing(true);
+      let actualMeetingId = meetingId;
+      const token = localStorage.getItem('token');
+      const API_KEY = import.meta.env.VITE_API_KEY;
+      
+      if (!actualMeetingId) {
+        const userId = localStorage.getItem('userId');
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/meetings/`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+            "X-API-Key": API_KEY,
+          },
+          body: JSON.stringify({
+            title: meetingTitle || "Meeting Tanpa Judul",
+            user_id: userId
+          }),
+        });
+        if (!res.ok) throw new Error('Gagal membuat meeting');
+        const data = await res.json();
+        actualMeetingId = data.meeting_id;
+        setMeetingId(actualMeetingId);
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploadRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/meetings/${actualMeetingId}/upload`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "X-API-Key": API_KEY,
+        },
+        body: formData
+      });
+
+      if (!uploadRes.ok) {
+        const errText = await uploadRes.text();
+        throw new Error(`Upload gagal: ${errText}`);
+      }
+      
+      alert("Audio berhasil diunggah!");
+    } catch (error) {
+      console.error(error);
+      alert("Error upload audio: " + error.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const sources = [
     { id: "mic", icon: "🎙", title: "Mic Only", subtitle: "Rekam suara dari mikrofon perangkat" },
     { id: "tab", icon: "🖥", title: "Tab/Aplikasi", subtitle: "Rekam audio dari tab/window (GMeet, Zoom, dll)" },
@@ -138,7 +194,18 @@ export default function MeetingsPage() {
   return (
     <>
       <style>{css}</style>
-      <div onClick={() => navigate('/')} style={backBtn}>←</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 24px', background: 'transparent', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
+        <div onClick={() => navigate('/')} style={{ ...backBtn, position: 'static' }}>←</div>
+        <button style={{
+          padding: '8px 22px', borderRadius: 20, border: '2px solid #e74c3c',
+          background: 'transparent', color: '#e74c3c', fontWeight: 600, fontSize: 14, cursor: 'pointer'
+        }}
+        onClick={() => {
+          localStorage.removeItem('token');
+          localStorage.removeItem('userId');
+          navigate('/');
+        }}>Sign Out</button>
+      </div>
       <div className="page">
         <div className="card">
           {/* Step label */}
@@ -190,6 +257,7 @@ export default function MeetingsPage() {
             onFile={setUploadedTranscript}
             meetingId={meetingId || ""}
             onMeetingIdChange={setMeetingId}
+            onAudioUpload={handleAudioUpload}
           />
 
           <AIPanel

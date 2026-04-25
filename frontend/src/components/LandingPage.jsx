@@ -15,16 +15,37 @@ export default function LandingPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
           <a href="#" style={{ color: '#555', textDecoration: 'none', fontSize: 15 }}>About Us</a>
           <a href="#" style={{ color: '#555', textDecoration: 'none', fontSize: 15 }}>Contact</a>
-          <button style={{
-            padding: '8px 22px', borderRadius: 20, border: '2px solid #1a73e8',
-            background: 'transparent', color: '#1a73e8', fontWeight: 600, fontSize: 14, cursor: 'pointer'
-          }}
-          onClick={() => navigate('/login')}>Sign In</button>
-          <button style={{
-            padding: '8px 22px', borderRadius: 20, border: 'none',
-            background: '#1a73e8', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer'
-          }}
-          onClick={() => navigate('/register')}>Sign Up</button>
+          {localStorage.getItem('token') ? (
+            <>
+              <button style={{
+                padding: '8px 22px', borderRadius: 20, border: 'none',
+                background: '#1a73e8', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer'
+              }}
+              onClick={() => navigate('/meetings')}>Go to Meetings</button>
+              <button style={{
+                padding: '8px 22px', borderRadius: 20, border: '2px solid #e74c3c',
+                background: 'transparent', color: '#e74c3c', fontWeight: 600, fontSize: 14, cursor: 'pointer'
+              }}
+              onClick={() => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('userId');
+                window.location.reload();
+              }}>Sign Out</button>
+            </>
+          ) : (
+            <>
+              <button style={{
+                padding: '8px 22px', borderRadius: 20, border: '2px solid #1a73e8',
+                background: 'transparent', color: '#1a73e8', fontWeight: 600, fontSize: 14, cursor: 'pointer'
+              }}
+              onClick={() => navigate('/login')}>Sign In</button>
+              <button style={{
+                padding: '8px 22px', borderRadius: 20, border: 'none',
+                background: '#1a73e8', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer'
+              }}
+              onClick={() => navigate('/register')}>Sign Up</button>
+            </>
+          )}
         </div>
       </nav>
 
