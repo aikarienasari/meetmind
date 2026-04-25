@@ -282,20 +282,20 @@ const css = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #3d5a7a;
-    --card: #4a6d8c;
-    --card2: #3a5570;
-    --accent: #c0392b;
-    --accent2: #e74c3c;
-    --blue: #2980b9;
-    --blue2: #3498db;
-    --text: #ffffff;
-    --text2: #c8dce9;
-    --text3: #8fb3cc;
-    --border: rgba(255,255,255,0.15);
-    --shadow: 0 4px 24px rgba(0,0,0,0.3);
-    --radius: 10px;
-    --font: 'DM Sans', sans-serif;
+    --bg: #f0f4fa;
+    --card: #ffffff;
+    --card2: #e8eef8;
+    --accent: #e74c3c;
+    --accent2: #c0392b;
+    --blue: #1a73e8;
+    --blue2: #1557b0;
+    --text: #333333;
+    --text2: #555555;
+    --text3: #777777;
+    --border: #e1e8f5;
+    --shadow: 0 4px 24px rgba(0,0,0,0.06);
+    --radius: 16px;
+    --font: 'Segoe UI', sans-serif;
     --mono: 'JetBrains Mono', monospace;
   }
 
@@ -305,8 +305,8 @@ const css = `
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    padding: 32px 16px;
-    background: linear-gradient(160deg, #2c4a66 0%, #3d6080 60%, #2a3f55 100%);
+    padding: 64px 16px 32px;
+    background: var(--bg);
   }
 
   .card {
@@ -351,8 +351,8 @@ const css = `
     font-family: var(--font);
   }
 
-  .source-card:hover { border-color: var(--blue2); background: #4a6a88; }
-  .source-card.selected { border-color: var(--blue2); background: #3a6080; box-shadow: 0 0 0 3px rgba(52,152,219,0.2); }
+  .source-card:hover { border-color: var(--blue2); background: #dce6f5; }
+  .source-card.selected { border-color: var(--blue2); background: #c5d8f8; box-shadow: 0 0 0 3px rgba(26,115,232,0.2); }
 
   .source-icon { font-size: 22px; }
   .source-title { font-size: 12px; font-weight: 600; text-align: center; }
@@ -426,7 +426,7 @@ const css = `
   }
 
   .transcript-area {
-    background: rgba(255,255,255,0.06);
+    background: #f8fafc;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 14px;
@@ -443,7 +443,7 @@ const css = `
 
   /* AI Section */
   .ai-section {
-    background: rgba(0,0,0,0.15);
+    background: #f8fafc;
     border-radius: var(--radius);
     padding: 16px;
     gap: 12px;
@@ -453,7 +453,7 @@ const css = `
   .ai-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
 
   .meeting-id-input {
-    background: rgba(255,255,255,0.08);
+    background: #f8fafc;
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 10px 14px;
@@ -533,7 +533,7 @@ const css = `
   .btn-ai:hover:not(:disabled) { background: var(--blue2); }
 
   .ai-result {
-    background: rgba(0,0,0,0.2);
+    background: #f8fafc;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 14px;
