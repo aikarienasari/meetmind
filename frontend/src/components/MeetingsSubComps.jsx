@@ -45,7 +45,7 @@ export function TranscriptBox({ value }) {
   );
 }
 
-export function DropZone({ onFile, meetingId, onMeetingIdChange, onAudioUpload }) {
+export function DropZone({ onFile, meetingId, onMeetingIdChange, onAudioUpload, uploadProgress }) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState(null);
   const inputRef = useRef();
@@ -117,6 +117,25 @@ export function DropZone({ onFile, meetingId, onMeetingIdChange, onAudioUpload }
           </>
         )}
       </div>
+      
+      {/* Upload Progress Bar */}
+      {uploadProgress !== null && (
+        <div style={{ marginTop: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <span style={{ fontSize: '12px', color: '#555', fontWeight: '600' }}>Mengunggah...</span>
+            <span style={{ fontSize: '12px', color: '#1a73e8', fontWeight: '600' }}>{uploadProgress}%</span>
+          </div>
+          <div style={{ width: '100%', backgroundColor: '#e1e8f5', borderRadius: '8px', height: '8px', overflow: 'hidden' }}>
+            <div style={{ 
+              width: `${uploadProgress}%`, 
+              backgroundColor: '#1a73e8', 
+              height: '100%', 
+              transition: 'width 0.2s ease',
+              borderRadius: '8px'
+            }}></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -353,6 +372,31 @@ const renderTranscript = (transcript, title, sectionKey) => {
       >
         {loading ? "⏳ Memproses..." : "📤 Kirim ke API"}
       </button>
+
+      {/* Indeterminate Progress Bar for AI Processing */}
+      {loading && (
+        <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+          <span style={{ fontSize: '12px', color: '#555', fontWeight: '600', display: 'block', marginBottom: '4px' }}>AI sedang memproses transkrip Anda...</span>
+          <div style={{ width: '100%', backgroundColor: '#e1e8f5', borderRadius: '8px', height: '6px', overflow: 'hidden', position: 'relative' }}>
+            <div style={{ 
+              position: 'absolute',
+              backgroundColor: '#1a73e8', 
+              height: '100%',
+              borderRadius: '8px',
+              width: '30%',
+              animation: 'indeterminate-progress 1.5s infinite linear'
+            }}></div>
+          </div>
+          <style>
+            {`
+              @keyframes indeterminate-progress {
+                0% { left: -30%; }
+                100% { left: 100%; }
+              }
+            `}
+          </style>
+        </div>
+      )}
 
       {(result || loading || error) && (
         <div className="ai-result">

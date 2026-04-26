@@ -13,7 +13,8 @@ export default function MeetingsPage() {
   const [meetingId, setMeetingId] = useState(null);
   const [wsError, setWsError] = useState(null);
   const [isWsRecording, setIsWsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // Tambahkan ini
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null); // Tambahkan ini
   
   const navigate = useNavigate();
   const timerRef = useRef(null);
@@ -135,6 +136,7 @@ export default function MeetingsPage() {
   const handleAudioUpload = async (file) => {
     try {
       setIsProcessing(true);
+      setUploadProgress(0);
       let actualMeetingId = meetingId;
       const token = localStorage.getItem('token');
       const API_KEY = import.meta.env.VITE_API_KEY;
@@ -162,19 +164,30 @@ export default function MeetingsPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const uploadRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/meetings/${actualMeetingId}/upload`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "X-API-Key": API_KEY,
-        },
-        body: formData
-      });
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `${import.meta.env.VITE_BACKEND_URL}/api/v1/meetings/${actualMeetingId}/upload`);
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+        xhr.setRequestHeader("X-API-Key", API_KEY);
 
-      if (!uploadRes.ok) {
-        const errText = await uploadRes.text();
-        throw new Error(`Upload gagal: ${errText}`);
-      }
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = Math.round((event.loaded / event.total) * 100);
+            setUploadProgress(percentComplete);
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(xhr.responseText);
+          } else {
+            reject(new Error(`Upload gagal: ${xhr.responseText}`));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Terjadi kesalahan jaringan saat upload"));
+        xhr.send(formData);
+      });
       
       alert("Audio berhasil diunggah!");
     } catch (error) {
@@ -182,6 +195,7 @@ export default function MeetingsPage() {
       alert("Error upload audio: " + error.message);
     } finally {
       setIsProcessing(false);
+      setUploadProgress(null);
     }
   };
 
@@ -258,6 +272,7 @@ export default function MeetingsPage() {
             meetingId={meetingId || ""}
             onMeetingIdChange={setMeetingId}
             onAudioUpload={handleAudioUpload}
+            uploadProgress={uploadProgress}
           />
 
           <AIPanel
