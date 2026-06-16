@@ -1,7 +1,5 @@
+import LandingPage from '../components/LandingPage.jsx'
+
 export default function HomePage() {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <h1 className="text-3xl font-bold">🧠 MeetMind</h1>
-    </div>
-  )
+  return <LandingPage className="w-full h-full border-black border landing-page" />
 }
