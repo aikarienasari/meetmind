@@ -190,12 +190,16 @@ export default function MeetingsPage() {
       });
       
       alert("Audio berhasil diunggah!");
+      // Tunda menghapus progress bar agar user bisa melihat status Selesai
+      setTimeout(() => {
+        setUploadProgress(null);
+      }, 3000);
     } catch (error) {
       console.error(error);
       alert("Error upload audio: " + error.message);
+      setUploadProgress(null);
     } finally {
       setIsProcessing(false);
-      setUploadProgress(null);
     }
   };
 
@@ -210,15 +214,22 @@ export default function MeetingsPage() {
       <style>{css}</style>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 24px', background: 'transparent', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
         <div onClick={() => navigate('/')} style={{ ...backBtn, position: 'static' }}>←</div>
-        <button style={{
-          padding: '8px 22px', borderRadius: 20, border: '2px solid #e74c3c',
-          background: 'transparent', color: '#e74c3c', fontWeight: 600, fontSize: 14, cursor: 'pointer'
-        }}
-        onClick={() => {
-          localStorage.removeItem('token');
-          localStorage.removeItem('userId');
-          navigate('/');
-        }}>Sign Out</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button style={{
+            padding: '8px 22px', borderRadius: 20, border: '2px solid #1a73e8',
+            background: 'transparent', color: '#1a73e8', fontWeight: 600, fontSize: 14, cursor: 'pointer'
+          }}
+          onClick={() => navigate('/profile')}>Profil</button>
+          <button style={{
+            padding: '8px 22px', borderRadius: 20, border: '2px solid #e74c3c',
+            background: 'transparent', color: '#e74c3c', fontWeight: 600, fontSize: 14, cursor: 'pointer'
+          }}
+          onClick={() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+            navigate('/');
+          }}>Sign Out</button>
+        </div>
       </div>
       <div className="page">
         <div className="card">

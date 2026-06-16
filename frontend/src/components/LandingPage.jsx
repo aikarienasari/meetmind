@@ -6,13 +6,30 @@ export default function LandingPage() {
   return (
     <div style={{ fontFamily: "'Segoe UI', sans-serif", background: '#f0f4fa', minHeight: '100vh', color: '#333' }}>
 
+      <style>{`
+        /* ── Responsive overrides for landing page ──────────────── */
+        @media (max-width: 720px) {
+          .landing-nav { padding: 12px 16px !important; flex-wrap: wrap; gap: 8px; }
+          .landing-nav-actions { gap: 8px !important; flex-wrap: wrap; }
+          .landing-hero { flex-direction: column-reverse !important; padding: 24px 16px !important; }
+          .landing-hero > div:first-child { padding-right: 0 !important; }
+          .landing-hero-illustration { width: 140px !important; height: 130px !important; }
+          .landing-gallery { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; padding: 0 16px 32px !important; }
+          .landing-feature-card { flex-direction: column !important; padding: 18px !important; gap: 14px !important; }
+          .landing-feature-illustration { width: 100% !important; height: 90px !important; }
+          .landing-section-pad { padding: 32px 16px !important; }
+          .landing-cta { padding: 32px 16px !important; }
+          .landing-cta h2 { font-size: 22px !important; }
+        }
+      `}</style>
+
       {/* Navbar */}
-      <nav style={{
+      <nav className="landing-nav" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '16px 40px', background: '#f0f4fa', position: 'sticky', top: 0, zIndex: 100
       }}>
         <span style={{ fontWeight: 700, fontSize: 20, color: '#1a73e8' }}>MeetMind</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+        <div className="landing-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
           <a href="#" style={{ color: '#555', textDecoration: 'none', fontSize: 15 }}>About Us</a>
           <a href="#" style={{ color: '#555', textDecoration: 'none', fontSize: 15 }}>Contact</a>
           {localStorage.getItem('token') ? (
@@ -22,6 +39,11 @@ export default function LandingPage() {
                 background: '#1a73e8', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer'
               }}
               onClick={() => navigate('/meetings')}>Go to Meetings</button>
+              <button style={{
+                padding: '8px 22px', borderRadius: 20, border: '2px solid #1a73e8',
+                background: 'transparent', color: '#1a73e8', fontWeight: 600, fontSize: 14, cursor: 'pointer'
+              }}
+              onClick={() => navigate('/profile')}>Profil</button>
               <button style={{
                 padding: '8px 22px', borderRadius: 20, border: '2px solid #e74c3c',
                 background: 'transparent', color: '#e74c3c', fontWeight: 600, fontSize: 14, cursor: 'pointer'
@@ -50,7 +72,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section style={{
+      <section className="landing-hero" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '48px 40px 40px', maxWidth: 900, margin: '0 auto'
       }}>
@@ -62,7 +84,7 @@ export default function LandingPage() {
             MeetMind hadir untuk memastikan tidak ada detail yang terlewat. Dari transkripsi real-time hingga analisis teks otomatis yang mendalam, kami membantu Anda fokus pada diskusi, kami menangani dokumentasinya.
           </p>
         </div>
-        <div style={{ flexShrink: 0, width: 200, height: 180, background: 'linear-gradient(135deg,#e0eaff,#c9daf8)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="landing-hero-illustration" style={{ flexShrink: 0, width: 200, height: 180, background: 'linear-gradient(135deg,#e0eaff,#c9daf8)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {/* Brain/AI illustration placeholder */}
           <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="60" cy="60" r="56" fill="#c2d4f8" />
@@ -84,7 +106,7 @@ export default function LandingPage() {
       </section>
 
       {/* Image Gallery Row */}
-      <section style={{ padding: '0 40px 48px', maxWidth: 900, margin: '0 auto' }}>
+      <section className="landing-gallery" style={{ padding: '0 40px 48px', maxWidth: 900, margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
           {[
             { label: 'Rooms', bg: '#b0c4de' },
@@ -112,7 +134,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Banner */}
-      <section style={{
+      <section className="landing-cta" style={{
         background: 'linear-gradient(135deg, #3a6fd8, #1a3c8e)',
         padding: '48px 40px', textAlign: 'center', color: '#fff'
       }}>
@@ -130,10 +152,10 @@ export default function LandingPage() {
       </section>
 
       {/* Feature Cards */}
-      <section style={{ padding: '48px 40px', maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <section className="landing-section-pad" style={{ padding: '48px 40px', maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
         {/* Card 1 - Real-Time Transcription */}
-        <div style={{
+        <div className="landing-feature-card" style={{
           background: '#e8eef8', borderRadius: 16, padding: '24px 28px',
           display: 'flex', alignItems: 'center', gap: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
         }}>
@@ -143,7 +165,7 @@ export default function LandingPage() {
               MeetMind secara otomatis mengubah percakapan rapat menjadi teks secara real-time dengan akurasi tinggi. Tim tidak perlu lagi mencatat manual karena semua diskusi langsung terdokumentasi selama rapat berlangsung.
             </p>
           </div>
-          <div style={{
+          <div className="landing-feature-illustration" style={{
             width: 130, height: 100, borderRadius: 12, flexShrink: 0,
             background: 'linear-gradient(135deg, #c5d8f8, #a8c4f0)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden'
@@ -161,11 +183,11 @@ export default function LandingPage() {
         </div>
 
         {/* Card 2 - AI Summary */}
-        <div style={{
+        <div className="landing-feature-card" style={{
           background: '#e8eef8', borderRadius: 16, padding: '24px 28px',
           display: 'flex', alignItems: 'center', gap: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
         }}>
-          <div style={{
+          <div className="landing-feature-illustration" style={{
             width: 130, height: 100, borderRadius: 12, flexShrink: 0,
             background: 'linear-gradient(135deg, #b8d0f0, #95b8e8)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden'
@@ -187,7 +209,7 @@ export default function LandingPage() {
         </div>
 
         {/* Card 3 - Action Items */}
-        <div style={{
+        <div className="landing-feature-card" style={{
           background: '#e8eef8', borderRadius: 16, padding: '24px 28px',
           display: 'flex', alignItems: 'center', gap: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
         }}>
@@ -197,7 +219,7 @@ export default function LandingPage() {
               MeetMind secara otomatis mengekstrak tugas dan langkah selanjutnya (action items) dari hasil rapat. Dengan begitu setiap anggota tim tahu apa yang harus dikerjakan setelah meeting, sehingga rapat tidak berhenti hanya pada diskusi.
             </p>
           </div>
-          <div style={{
+          <div className="landing-feature-illustration" style={{
             width: 130, height: 100, borderRadius: 12, flexShrink: 0,
             background: 'linear-gradient(135deg, #c8d8f8, #a0bcec)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden'

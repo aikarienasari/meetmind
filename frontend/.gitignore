@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Environment files — jangan commit nilai asli!
+# .env.example boleh commit sebagai dokumentasi.
+.env
+.env.local
+.env.development
+.env.production
+.env.*.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

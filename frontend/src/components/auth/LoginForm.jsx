@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { container, backBtn, card, title, btn } from '../../styles/authStyles';
 import { Input } from "./Input";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function LoginForm({ onBack, onLogin }) {
   const navigate = useNavigate();
@@ -99,6 +99,15 @@ export default function LoginForm({ onBack, onLogin }) {
           onChange={handleChange}
           error={errors.password}
         />
+
+        <div style={{ textAlign: 'right', marginTop: -4, marginBottom: 10 }}>
+          <Link
+            to="/forgot-password"
+            style={{ fontSize: 12, color: '#1a73e8', textDecoration: 'none' }}
+          >
+            Lupa password?
+          </Link>
+        </div>
 
         <button disabled={loading} style={btn} onClick={handleSubmit}>
           {loading ? 'Loading...' : 'masuk'}
