@@ -8,7 +8,46 @@ import {
   uploadAvatar,
   setNotifications,
 } from '../services/profileService'
-import { container, backBtn, card, title, btn, inputStyle, labelStyle } from '../styles/authStyles'
+import { authFormStyles } from '../components/auth/authFormStyles'
+
+const profileStyles = {
+  container: {
+    ...authFormStyles.container,
+    alignItems: 'flex-start',
+    padding: '56px 20px',
+    boxSizing: 'border-box',
+  },
+  backBtn: authFormStyles.backBtn,
+  card: {
+    ...authFormStyles.card,
+    width: 'min(460px, calc(100vw - 40px))',
+    minHeight: 'auto',
+    margin: '0 auto',
+  },
+  title: {
+    ...authFormStyles.title,
+    margin: '0 0 30px',
+  },
+  label: authFormStyles.label,
+  input: authFormStyles.input,
+  primaryButton: {
+    ...authFormStyles.button,
+    width: '100%',
+    height: 42,
+    marginBottom: 20,
+  },
+  secondaryButton: {
+    height: 34,
+    padding: '0 18px',
+    borderRadius: 999,
+    border: '2px solid #dfe6ee',
+    background: 'transparent',
+    color: '#ffffff',
+    fontWeight: 800,
+    fontSize: 12,
+    cursor: 'pointer',
+  },
+}
 
 /**
  * Halaman Profil.
@@ -126,9 +165,9 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div style={container}>
-        <div style={card}>
-          <p style={{ color: '#555' }}>Memuat profil...</p>
+      <div style={profileStyles.container}>
+        <div style={profileStyles.card}>
+          <p style={{ color: '#fff', fontWeight: 800 }}>Memuat profil...</p>
         </div>
       </div>
     )
@@ -137,13 +176,13 @@ export default function ProfilePage() {
   const emailInitial = (profile?.email || '?')[0]?.toUpperCase() || '?'
 
   return (
-    <div style={{ ...container, alignItems: 'flex-start', paddingTop: 40 }}>
-      <div onClick={() => navigate('/meetings')} style={backBtn}>
+    <div style={profileStyles.container}>
+      <button type="button" onClick={() => navigate('/meetings')} style={profileStyles.backBtn} aria-label="Kembali">
         ←
-      </div>
+      </button>
 
-      <div style={{ ...card, width: 420, margin: '0 auto' }}>
-        <h2 style={title}>PROFIL</h2>
+      <div style={profileStyles.card}>
+        <h2 style={profileStyles.title}>PROFIL</h2>
 
         {/* Avatar */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 24 }}>
@@ -153,16 +192,16 @@ export default function ProfilePage() {
               height: 96,
               borderRadius: '50%',
               background: avatarUrl
-                ? `#e1e8f5`
-                : 'linear-gradient(135deg, #1a73e8, #1557b0)',
+                ? '#dfe6ee'
+                : 'linear-gradient(135deg, #dfe6ee, #bfcbd7)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#fff',
+              color: '#2f6f9c',
               fontSize: 36,
               fontWeight: 700,
               overflow: 'hidden',
-              border: '3px solid #1a73e8',
+              border: '4px solid #dfe6ee',
             }}
           >
             {avatarUrl ? (
@@ -187,13 +226,7 @@ export default function ProfilePage() {
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingPhoto}
             style={{
-              padding: '6px 18px',
-              borderRadius: 20,
-              border: '2px solid #1a73e8',
-              background: 'transparent',
-              color: '#1a73e8',
-              fontWeight: 600,
-              fontSize: 12,
+              ...profileStyles.secondaryButton,
               cursor: uploadingPhoto ? 'wait' : 'pointer',
               opacity: uploadingPhoto ? 0.6 : 1,
             }}
@@ -204,28 +237,28 @@ export default function ProfilePage() {
 
         {/* Email (read-only) */}
         <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>email:</label>
+          <label style={profileStyles.label}>email:</label>
           <input
             value={profile?.email || ''}
             readOnly
-            style={{ ...inputStyle, background: '#eef2f7', color: '#888', cursor: 'not-allowed' }}
+            style={{ ...profileStyles.input, color: '#55799b', cursor: 'not-allowed' }}
           />
         </div>
 
         {/* Edit Nama */}
         <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>nama:</label>
+          <label style={profileStyles.label}>nama:</label>
           <input
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            style={inputStyle}
+            style={profileStyles.input}
             placeholder="Nama tampilan"
           />
         </div>
         <button
           onClick={handleSaveName}
           disabled={savingName}
-          style={{ ...btn, marginTop: 0, marginBottom: 20 }}
+          style={profileStyles.primaryButton}
         >
           {savingName ? 'Menyimpan...' : 'Simpan Nama'}
         </button>
@@ -237,15 +270,15 @@ export default function ProfilePage() {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '12px 14px',
-            border: '1px solid #e1e8f5',
-            borderRadius: 8,
-            background: '#f8fafc',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: 18,
+            background: 'rgba(221,221,221,0.18)',
             marginBottom: 20,
           }}
         >
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>Notifikasi Email</div>
-            <div style={{ fontSize: 11, color: '#888' }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>Notifikasi Email</div>
+            <div style={{ fontSize: 11, color: '#edf3f8' }}>
               {savingNotif ? 'Menyimpan...' : 'Aktifkan ringkasan rapat via email'}
             </div>
           </div>
@@ -269,7 +302,7 @@ export default function ProfilePage() {
               style={{
                 position: 'absolute',
                 inset: 0,
-                background: notifEnabled ? '#1a73e8' : '#c8d6e8',
+                background: notifEnabled ? '#2f6f9c' : '#c8d6e8',
                 borderRadius: 24,
                 transition: '0.2s',
               }}
@@ -297,9 +330,9 @@ export default function ProfilePage() {
             width: '100%',
             padding: '8px 12px',
             borderRadius: 8,
-            border: '1px dashed #c8d6e8',
+            border: '1px dashed rgba(255,255,255,0.45)',
             background: 'transparent',
-            color: '#888',
+            color: '#edf3f8',
             fontSize: 11,
             cursor: 'pointer',
             marginBottom: 12,
