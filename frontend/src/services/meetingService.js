@@ -1,3 +1,5 @@
+import { isMockMode, mockMeetings, mockUpdateMeeting } from '../mocks/mockData'
+
 /**
  * Meeting API Service
  *
@@ -23,6 +25,10 @@ const authHeaders = () => {
  * Ambil detail satu meeting (untuk edit / export / regenerate).
  */
 export const getMeetingDetail = async (meetingId) => {
+  if (isMockMode()) {
+    return mockMeetings.find((meeting) => meeting.meeting_id === meetingId) || mockMeetings[0]
+  }
+
   if (!meetingId) throw new Error('meetingId wajib diisi')
   const res = await fetch(`${BASE_URL}/api/v1/meetings/${meetingId}`, {
     method: 'GET',
@@ -43,6 +49,8 @@ export const getMeetingDetail = async (meetingId) => {
  * @param {{ title?: string, full_transcript?: string, re_analyze?: boolean }} payload
  */
 export const updateMeeting = async (meetingId, payload) => {
+  if (isMockMode()) return mockUpdateMeeting(meetingId, payload)
+
   if (!meetingId) throw new Error('meetingId wajib diisi')
   const res = await fetch(`${BASE_URL}/api/v1/meetings/${meetingId}`, {
     method: 'PATCH',

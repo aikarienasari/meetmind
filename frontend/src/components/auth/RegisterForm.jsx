@@ -1,15 +1,36 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { container, backBtn, card, title, btn } from '../../styles/authStyles';
-import { Input } from './Input';
 import { useNavigate } from 'react-router-dom';
+import { authFormStyles } from './authFormStyles.js';
+
+const registerStyles = {
+  ...authFormStyles,
+  card: {
+    ...authFormStyles.card,
+    minHeight: 500,
+    padding: '44px 48px 38px',
+  },
+  title: {
+    ...authFormStyles.title,
+    margin: '0 0 40px',
+    textTransform: 'none',
+  },
+  field: {
+    ...authFormStyles.field,
+    marginBottom: 18,
+  },
+  actions: {
+    ...authFormStyles.actions,
+    marginTop: 32,
+  },
+};
 
 export default function RegisterForm({ onBack, onRegister }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     email: '',
     password: '',
-    confirm_password: ''
+    confirm_password: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -63,7 +84,8 @@ export default function RegisterForm({ onBack, onRegister }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event) => {
+    event?.preventDefault();
     if (!validate()) return;
     setLoading(true);
     try {
@@ -77,43 +99,59 @@ export default function RegisterForm({ onBack, onRegister }) {
   };
 
   return (
-    <div style={container}>
-      <div onClick={onBack} style={backBtn}>←</div>
+    <div style={registerStyles.container}>
+      <button type="button" onClick={onBack} style={registerStyles.backBtn} aria-label="Kembali">
+        ←
+      </button>
 
-      <div style={card}>
-        <h2 style={title}>Register</h2>
+      <form style={registerStyles.card} onSubmit={handleSubmit}>
+        <h2 style={registerStyles.title}>Register</h2>
 
-        <Input
-          label="email"
-          name="email"
-          value={form.email}
-          onChange={handleChange}
-          error={errors.email}
-        />
+        <div style={registerStyles.field}>
+          <label style={registerStyles.label} htmlFor="register-email">email:</label>
+          <input
+            id="register-email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            style={registerStyles.input}
+          />
+          {errors.email && <div style={registerStyles.error}>{errors.email}</div>}
+        </div>
 
-        <Input
-          label="password"
-          type="password"
-          name="password"
-          value={form.password}
-          onChange={handleChange}
-          error={errors.password}
-        />
+        <div style={registerStyles.field}>
+          <label style={registerStyles.label} htmlFor="register-password">password:</label>
+          <input
+            id="register-password"
+            type="password"
+            name="password"
+            value={form.password}
+            onChange={handleChange}
+            style={registerStyles.input}
+          />
+          {errors.password && <div style={registerStyles.error}>{errors.password}</div>}
+        </div>
 
-        <Input
-          label="konfirmasi password"
-          type="password"
-          name="confirm_password"
-          value={form.confirm_password}
-          onChange={handleChange}
-          error={errors.confirm_password}
-        />
+        <div style={registerStyles.field}>
+          <label style={registerStyles.label} htmlFor="register-confirm-password">konfirmasi password:</label>
+          <input
+            id="register-confirm-password"
+            type="password"
+            name="confirm_password"
+            value={form.confirm_password}
+            onChange={handleChange}
+            style={registerStyles.input}
+          />
+          {errors.confirm_password && <div style={registerStyles.error}>{errors.confirm_password}</div>}
+        </div>
 
-        <button disabled={loading} style={btn} onClick={handleSubmit}>
-          {loading ? 'Loading...' : 'Daftar'}
-        </button>
+        <div style={registerStyles.actions}>
+          <button type="submit" disabled={loading} style={registerStyles.button}>
+            {loading ? 'loading' : 'daftar'}
+          </button>
+        </div>
 
-      </div>
+      </form>
     </div>
   );
 }

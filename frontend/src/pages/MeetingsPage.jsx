@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { SourceCard, Timer, RecordButton, TranscriptBox, DropZone, AIPanel } from "../components/MeetingsSubComps.jsx";
 import { useWebSocketRecorder } from "../hooks/useWebSocketRecorder.js";
 import { useNavigate } from "react-router-dom";
-import { backBtn } from "../styles/authStyles.js";
+import { isMockMode, mockCreateMeeting, mockTranscript } from "../mocks/mockData.js";
 
 export default function MeetingsPage() {
   const [source, setSource] = useState("mic");
@@ -15,11 +15,9 @@ export default function MeetingsPage() {
   const [isWsRecording, setIsWsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(null); // Tambahkan ini
-  
+
   const navigate = useNavigate();
   const timerRef = useRef(null);
-  const wsRef = useRef(null);
-
   const wsRecorder = useWebSocketRecorder({
     meetingId,
     source,
@@ -43,7 +41,7 @@ export default function MeetingsPage() {
       console.log("Recording stopped with data:", data);
       setIsWsRecording(false);
       setIsProcessing(false); // Reset processing state
-      
+
       // Jika session_ended diterima, otomatis kirim ke AI
       if (data && data.sessionEnded) {
         console.log("Session ended successfully");
@@ -51,7 +49,7 @@ export default function MeetingsPage() {
       }
     }
   });
-  
+
   useEffect(() => {
     if (isWsRecording) {
       timerRef.current = setInterval(()=>{
@@ -73,7 +71,7 @@ export default function MeetingsPage() {
     setTranscript("");
     setSeconds(0);
     setIsProcessing(false); // Reset processing state
-    
+
     // Create meeting first if not exists
     let newMeetingId = meetingId;
     if (!newMeetingId) {
@@ -82,33 +80,51 @@ export default function MeetingsPage() {
         alert('Silakan login terlebih dahulu');
         return;
       }
-      
-      try {
-        const token = localStorage.getItem('token');
-        const API_KEY = import.meta.env.VITE_API_KEY;
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/meetings/`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-            "X-API-Key": API_KEY,
-          },
-          body: JSON.stringify({
-            title: meetingTitle || "Meeting Tanpa Judul",
-            user_id: userId
-          }),
-        });
-        
-        if (!res.ok) throw new Error('Gagal membuat meeting');
-        
-        const data = await res.json();
+
+      if (isMockMode()) {
+        const data = await mockCreateMeeting(meetingTitle || "Meeting Tanpa Judul");
         newMeetingId = data.meeting_id;
         setMeetingId(newMeetingId);
-      } catch (err) {
-        console.error("Error creating meeting:", err);
-        alert("Gagal membuat meeting: " + err.message);
-        return;
+      } else {
+
+        try {
+          const token = localStorage.getItem('token');
+          const API_KEY = import.meta.env.VITE_API_KEY;
+          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/meetings/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+              "X-API-Key": API_KEY,
+            },
+            body: JSON.stringify({
+              title: meetingTitle || "Meeting Tanpa Judul",
+              user_id: userId
+            }),
+          });
+
+          if (!res.ok) throw new Error('Gagal membuat meeting');
+
+          const data = await res.json();
+          newMeetingId = data.meeting_id;
+          setMeetingId(newMeetingId);
+        } catch (err) {
+          console.error("Error creating meeting:", err);
+          alert("Gagal membuat meeting: " + err.message);
+          return;
+        }
       }
+    }
+
+    if (isMockMode()) {
+      setIsWsRecording(true);
+      setWsError(null);
+      window.setTimeout(() => {
+        setTranscript(mockTranscript);
+        setIsWsRecording(false);
+        setIsProcessing(false);
+      }, 1800);
+      return;
     }
 
     // Mulai WebSocket recording
@@ -122,6 +138,12 @@ export default function MeetingsPage() {
 
   const stopRecording = () => {
     setIsProcessing(true); // Set processing state saat stop
+    if (isMockMode()) {
+      setTranscript(mockTranscript);
+      setIsWsRecording(false);
+      window.setTimeout(() => setIsProcessing(false), 500);
+      return;
+    }
     wsRecorder.stopRecording();
   };
 
@@ -137,15 +159,28 @@ export default function MeetingsPage() {
     try {
       setIsProcessing(true);
       setUploadProgress(0);
+
+      if (isMockMode()) {
+        setUploadProgress(35);
+        await new Promise((resolve) => window.setTimeout(resolve, 250));
+        setUploadProgress(80);
+        await new Promise((resolve) => window.setTimeout(resolve, 250));
+        setUploadedTranscript(mockTranscript);
+        setUploadProgress(100);
+        alert(`Mock upload berhasil: ${file.name}`);
+        setTimeout(() => setUploadProgress(null), 1800);
+        return;
+      }
+
       let actualMeetingId = meetingId;
       const token = localStorage.getItem('token');
       const API_KEY = import.meta.env.VITE_API_KEY;
-      
+
       if (!actualMeetingId) {
         const userId = localStorage.getItem('userId');
         const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/meetings/`, {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`,
             "X-API-Key": API_KEY,
@@ -188,7 +223,7 @@ export default function MeetingsPage() {
         xhr.onerror = () => reject(new Error("Terjadi kesalahan jaringan saat upload"));
         xhr.send(formData);
       });
-      
+
       alert("Audio berhasil diunggah!");
       // Tunda menghapus progress bar agar user bisa melihat status Selesai
       setTimeout(() => {
@@ -212,23 +247,25 @@ export default function MeetingsPage() {
   return (
     <>
       <style>{css}</style>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 24px', background: 'transparent', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
-        <div onClick={() => navigate('/')} style={{ ...backBtn, position: 'static' }}>←</div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button style={{
-            padding: '8px 22px', borderRadius: 20, border: '2px solid #1a73e8',
-            background: 'transparent', color: '#1a73e8', fontWeight: 600, fontSize: 14, cursor: 'pointer'
-          }}
-          onClick={() => navigate('/profile')}>Profil</button>
-          <button style={{
-            padding: '8px 22px', borderRadius: 20, border: '2px solid #e74c3c',
-            background: 'transparent', color: '#e74c3c', fontWeight: 600, fontSize: 14, cursor: 'pointer'
-          }}
-          onClick={() => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('userId');
-            navigate('/');
-          }}>Sign Out</button>
+      <div className="meetings-topbar">
+        <button type="button" className="meetings-back" onClick={() => navigate('/')} aria-label="Kembali">
+          ←
+        </button>
+        <div className="meetings-actions">
+          <button type="button" className="meetings-action" onClick={() => navigate('/profile')}>
+            Profil
+          </button>
+          <button
+            type="button"
+            className="meetings-action danger"
+            onClick={() => {
+              localStorage.removeItem('token');
+              localStorage.removeItem('userId');
+              navigate('/');
+            }}
+          >
+            Sign Out
+          </button>
         </div>
       </div>
       <div className="page">
@@ -251,7 +288,7 @@ export default function MeetingsPage() {
           </div>
 
           {/* Meeting Title */}
-          <div className="section">
+          <div className="section meeting-title-section">
             <p className="section-label">JUDUL MEETING:</p>
             <input
               className="meeting-id-input"
@@ -264,9 +301,9 @@ export default function MeetingsPage() {
           {/* Timer + record button */}
           <div className="recorder-center">
             <Timer seconds={seconds} />
-            <RecordButton 
-              recording={isWsRecording} 
-              onClick={toggleRecording} 
+            <RecordButton
+              recording={isWsRecording}
+              onClick={toggleRecording}
             />
             {!isWsRecording && !isProcessing && <p className="rec-hint">klik untuk mulai rekam</p>}
             {isWsRecording && <p className="rec-hint recording-hint">● Sedang merekam…</p>}
@@ -278,22 +315,24 @@ export default function MeetingsPage() {
           <TranscriptBox value={transcript} />
 
           {/* Drop zone + AI panel */}
-          <DropZone
-            onFile={setUploadedTranscript}
-            meetingId={meetingId || ""}
-            onMeetingIdChange={setMeetingId}
-            onAudioUpload={handleAudioUpload}
-            uploadProgress={uploadProgress}
-          />
+          <div className="ai-combined">
+            <DropZone
+              onFile={setUploadedTranscript}
+              meetingId={meetingId || ""}
+              onMeetingIdChange={setMeetingId}
+              onAudioUpload={handleAudioUpload}
+              uploadProgress={uploadProgress}
+            />
 
-          <AIPanel
-            transcript={transcript}
-            uploadedTranscript={uploadedTranscript}
-            meetingTitle={meetingTitle}
-            recording={isWsRecording}
-            onStop={stopRecording}
-            meetingId={meetingId}
-          />
+            <AIPanel
+              transcript={transcript}
+              uploadedTranscript={uploadedTranscript}
+              meetingTitle={meetingTitle}
+              recording={isWsRecording}
+              onStop={stopRecording}
+              meetingId={meetingId}
+            />
+          </div>
         </div>
       </div>
     </>
@@ -303,110 +342,182 @@ export default function MeetingsPage() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #f0f4fa;
-    --card: #ffffff;
-    --card2: #e8eef8;
-    --accent: #e74c3c;
-    --accent2: #c0392b;
-    --blue: #1a73e8;
-    --blue2: #1557b0;
-    --text: #333333;
-    --text2: #555555;
-    --text3: #777777;
-    --border: #e1e8f5;
-    --shadow: 0 4px 24px rgba(0,0,0,0.06);
-    --radius: 16px;
-    --font: 'Segoe UI', sans-serif;
+    --bg: #5f8fbc;
+    --panel: #c7d1dc;
+    --panel2: #c2ccd7;
+    --red: #7b0000;
+    --blueText: #2b6ea4;
+    --white: #ffffff;
+    --muted: #e8f0f7;
+    --shadow: none;
+    --radius: 22px;
+    --font: Inter, 'Segoe UI', sans-serif;
     --mono: 'JetBrains Mono', monospace;
   }
 
-  body { font-family: var(--font); background: var(--bg); color: var(--text); }
+  body { font-family: var(--font); background: var(--bg); color: var(--white); }
+
+  .meetings-topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px;
+    pointer-events: none;
+  }
+
+  .meetings-back,
+  .meetings-action {
+    pointer-events: auto;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+  }
+
+  .meetings-back {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    font-size: 42px;
+    line-height: 1;
+    font-weight: 300;
+    display: grid;
+    place-items: center;
+    text-shadow: 0 2px 4px rgba(26, 71, 110, 0.24);
+  }
+
+  .meetings-back:hover {
+    transform: translateX(-2px);
+  }
+
+  .meetings-actions {
+    display: flex;
+    gap: 10px;
+    pointer-events: auto;
+  }
+
+  .meetings-action {
+    height: 34px;
+    padding: 0 18px;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.82);
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 900;
+    backdrop-filter: blur(8px);
+  }
+
+  .meetings-action:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  .meetings-action.danger {
+    border-color: rgba(255, 226, 226, 0.85);
+    color: #ffe2e2;
+  }
 
   .page {
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    padding: 64px 16px 32px;
+    padding: 64px 32px 120px;
     background: var(--bg);
   }
 
   .card {
-    background: var(--card);
-    border-radius: 16px;
-    padding: 28px 24px;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
     width: 100%;
-    max-width: 520px;
+    max-width: 820px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border);
+    gap: 26px;
+    box-shadow: none;
+    border: 0;
   }
 
   .step-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text2);
+    font-size: 14px;
+    font-weight: 900;
+    color: var(--white);
     letter-spacing: 0.02em;
+    margin-left: 0;
   }
 
   /* Source cards */
   .source-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    gap: 28px;
+    padding: 8px 28px 0;
   }
 
   .source-card {
-    background: var(--card2);
+    min-height: 138px;
+    background: var(--panel);
     border: 2px solid transparent;
-    border-radius: var(--radius);
-    padding: 14px 8px;
+    border-radius: 13px;
+    padding: 18px 12px 14px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
     cursor: pointer;
     transition: all 0.18s ease;
-    color: var(--text);
+    color: #071018;
     font-family: var(--font);
+    box-shadow: none;
   }
 
-  .source-card:hover { border-color: var(--blue2); background: #dce6f5; }
-  .source-card.selected { border-color: var(--blue2); background: #c5d8f8; box-shadow: 0 0 0 3px rgba(26,115,232,0.2); }
+  .source-card:hover { transform: translateY(-2px); background: #d1dae4; }
+  .source-card.selected { border-color: rgba(255,255,255,0.5); background: #c7d1dc; box-shadow: 0 0 0 3px rgba(255,255,255,0.12); }
 
-  .source-icon { font-size: 22px; }
-  .source-title { font-size: 12px; font-weight: 600; text-align: center; }
-  .source-sub { font-size: 10px; color: var(--text3); text-align: center; line-height: 1.4; }
+  .source-icon { font-size: 36px; line-height: 1; }
+  .source-title { font-size: 11px; font-weight: 900; text-align: center; }
+  .source-sub { font-size: 11px; color: #050b11; text-align: center; line-height: 1.45; font-weight: 500; }
+
+  .meeting-title-section {
+    display: none !important;
+  }
 
   /* Recorder center */
   .recorder-center {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
-    padding: 8px 0;
+    gap: 18px;
+    padding: 2px 0 22px;
   }
 
   .timer {
     font-family: var(--mono);
-    font-size: 52px;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: 0.04em;
+    font-size: 64px;
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: -0.04em;
     line-height: 1;
   }
 
   .rec-btn {
-    width: 72px;
-    height: 72px;
+    width: 126px;
+    height: 126px;
     border-radius: 50%;
-    border: 3px solid var(--accent);
+    border: 5px solid var(--red);
     background: transparent;
     display: flex;
     align-items: center;
@@ -415,80 +526,82 @@ const css = `
     transition: all 0.2s ease;
   }
 
-  .rec-btn:hover { transform: scale(1.05); border-color: var(--accent2); }
-  .rec-btn.recording { border-color: var(--accent2); animation: pulse 1.4s infinite; }
+  .rec-btn:hover { transform: scale(1.03); border-color: #660000; }
+  .rec-btn.recording { border-color: var(--red); animation: pulse 1.4s infinite; }
 
   .rec-dot {
-    width: 28px;
-    height: 28px;
+    width: 0;
+    height: 0;
     border-radius: 50%;
-    background: var(--accent);
+    background: transparent;
     transition: all 0.2s ease;
   }
 
   .rec-btn.recording .rec-dot {
     border-radius: 6px;
-    background: var(--accent2);
-    width: 22px;
-    height: 22px;
+    background: var(--red);
+    width: 30px;
+    height: 30px;
   }
 
   @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.4); }
-    50% { box-shadow: 0 0 0 10px rgba(231,76,60,0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(123,0,0,0.28); }
+    50% { box-shadow: 0 0 0 14px rgba(123,0,0,0); }
   }
 
-  .rec-hint { font-size: 13px; color: var(--text3); }
-  .recording-hint { color: var(--accent2); font-weight: 500; }
+  .rec-hint { font-size: 13px; color: var(--white); font-weight: 900; }
+  .recording-hint { color: var(--white); font-weight: 900; }
 
   /* Sections */
-  .section { display: flex; flex-direction: column; gap: 8px; }
+  .section { display: flex; flex-direction: column; gap: 10px; }
 
   .section-label {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--text2);
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    color: var(--white);
+    margin-left: 20px;
   }
 
   .transcript-area {
-    background: #f8fafc;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
-    min-height: 100px;
-    resize: vertical;
-    color: var(--text);
+    background: var(--panel);
+    border: 0;
+    border-radius: 24px;
+    padding: 24px;
+    min-height: 170px;
+    resize: none;
+    color: var(--blueText);
     font-family: var(--font);
     font-size: 13px;
     line-height: 1.6;
     outline: none;
+    font-weight: 700;
   }
 
-  .transcript-area::placeholder { color: var(--text3); }
+  .transcript-area::placeholder { color: var(--blueText); opacity: 0.8; }
 
-  /* AI Section */
-  .ai-section {
-    background: #f8fafc;
-    border-radius: var(--radius);
-    padding: 16px;
+  .ai-combined {
+    background: var(--panel);
+    border-radius: 24px;
+    padding: 24px 32px;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
   }
 
-  .ai-label { color: var(--blue2); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; }
-  .ai-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
+  /* AI Section */
+  .ai-section {
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    gap: 9px;
+  }
+
+  .ai-label { color: var(--blueText); font-size: 13px; font-weight: 900; letter-spacing: 0.02em; margin-left: 0; }
+  .ai-desc { font-size: 13px; color: var(--blueText); line-height: 1.5; font-weight: 500; }
 
   .meeting-id-input {
-    background: #f8fafc;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: var(--font);
-    font-size: 13px;
-    outline: none;
-    transition: border-color 0.15s;
-    width: 100%;
+    display: none;
   }
 
   .meeting-id-input:focus { border-color: var(--blue2); }
@@ -496,10 +609,10 @@ const css = `
 
   /* Drop zone */
   .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: var(--radius);
-    padding: 24px 16px;
-    display: flex;
+    border: 0;
+    border-radius: 999px;
+    padding: 9px 16px;
+    display: none;
     flex-direction: column;
     align-items: center;
     gap: 6px;
@@ -526,23 +639,23 @@ const css = `
   .action-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 12px;
     flex-direction: column;
   }
 
   .btn-row-inline {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     flex-wrap: wrap;
   }
 
   .btn {
-    padding: 10px 18px;
-    border-radius: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
     border: none;
     font-family: var(--font);
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 900;
     cursor: pointer;
     transition: all 0.18s ease;
     display: inline-flex;
@@ -553,37 +666,39 @@ const css = `
   .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
   .btn-stop { background: var(--accent); color: #fff; }
-  .btn-stop:hover:not(:disabled) { background: var(--accent2); }
+  .btn-stop { background: #d8562e; color: #fff; }
+  .btn-stop:hover:not(:disabled) { background: #b94422; }
 
-  .btn-ai { background: var(--blue); color: #fff; }
-  .btn-ai:hover:not(:disabled) { background: var(--blue2); }
+  .btn-ai { background: #e2e7ec; color: var(--blueText); }
+  .btn-ai:hover:not(:disabled) { background: #f2f5f8; }
 
   .ai-result {
-    background: #f8fafc;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
+    background: #e0e0e0;
+    border: 0;
+    border-radius: 12px;
+    padding: 12px 16px;
     width: 100%;
+    min-height: 32px;
   }
 
-  .ai-placeholder { font-size: 13px; color: var(--text3); font-style: italic; }
+  .ai-placeholder { font-size: 12px; color: #ffffff; font-style: italic; opacity: 0.88; }
 
   .ai-output {
     font-family: var(--font);
     font-size: 12.5px;
-    color: var(--text2);
+    color: #245d8c;
     white-space: pre-wrap;
     line-height: 1.7;
   }
 
   .ai-output h3 {
-    color: var(--text);
+    color: #174e7a;
     margin-bottom: 12px;
     font-size: 16px;
   }
 
   .ai-output h4 {
-    color: var(--blue2);
+    color: #174e7a;
     margin: 16px 0 8px 0;
     font-size: 14px;
   }
@@ -604,9 +719,94 @@ const css = `
   .rec-hint.recording-hint {
     animation: pulse-text 2s infinite;
   }
-  
+
   @keyframes pulse-text {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
+  }
+
+  @media (max-width: 760px) {
+    .meetings-topbar {
+      padding: 10px 14px;
+    }
+
+    .meetings-back {
+      width: 36px;
+      height: 36px;
+      font-size: 34px;
+    }
+
+    .meetings-actions {
+      gap: 6px;
+    }
+
+    .meetings-action {
+      height: 28px;
+      padding: 0 10px;
+      font-size: 10px;
+      border-width: 1px;
+    }
+
+    .page {
+      padding: 66px 20px 80px;
+    }
+
+    .card {
+      max-width: 100%;
+      gap: 18px;
+    }
+
+    .source-row {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      padding: 2px 10px 0;
+    }
+
+    .source-card {
+      height: 70px;
+      min-height: 70px;
+      border-radius: 9px;
+      padding: 5px 5px;
+      gap: 3px;
+      overflow: hidden;
+    }
+
+    .source-icon {
+      font-size: 18px;
+    }
+
+    .source-title {
+      font-size: 7.5px;
+    }
+
+    .source-sub {
+      font-size: 6.8px;
+      line-height: 1.25;
+    }
+
+    .timer {
+      font-size: 54px;
+    }
+
+    .rec-btn {
+      width: 68px;
+      height: 68px;
+      border-width: 4px;
+    }
+
+    .transcript-area {
+      min-height: 104px;
+    }
+
+    .ai-combined {
+      padding: 22px;
+    }
+  }
+
+  @media (max-width: 340px) {
+    .source-row {
+      grid-template-columns: 1fr;
+      padding: 0;
+    }
   }
 `;

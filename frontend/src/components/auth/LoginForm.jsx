@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
-import { toast } from 'react-toastify';
-import { container, backBtn, card, title, btn } from '../../styles/authStyles';
-import { Input } from "./Input";
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from "react";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import { authFormStyles as loginStyles } from "./authFormStyles.js";
 
 export default function LoginForm({ onBack, onLogin }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -17,102 +16,117 @@ export default function LoginForm({ onBack, onLogin }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
 
-    setErrors(prev => ({
+    setErrors((prev) => ({
       ...prev,
-      [name]: validateField(name, value)
-    }))
+      [name]: validateField(name, value),
+    }));
   };
 
   const validateField = (name, value) => {
     switch (name) {
-      case 'email':
-        if (!value.includes('@')) return 'Email tidak valid';
+      case "email":
+        if (!value.includes("@")) return "Email tidak valid";
         break;
-      case 'password':
-        if (value.length < 6) return 'Minimal 6 karakter';
+      case "password":
+        if (value.length < 6) return "Minimal 6 karakter";
         break;
     }
-    return '';
+    return "";
   };
 
   const validate = () => {
     const newErrors = {};
 
     if (!form.email) {
-      newErrors.email = 'Email wajib diisi';
+      newErrors.email = "Email wajib diisi";
     }
 
     if (form.password.length < 6) {
-      newErrors.password = 'Minimal 6 karakter';
+      newErrors.password = "Minimal 6 karakter";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event) => {
+    event?.preventDefault();
     if (!validate()) return;
 
     setLoading(true);
 
     try {
       const res = await onLogin(form);
-      
-      // Store both token and user_id
-      localStorage.setItem('token', res.access_token);
-      localStorage.setItem('userId', res.user_id);
 
-      toast.success('Login berhasil');
-      navigate('/');
+      // Store both token and user_id
+      localStorage.setItem("token", res.access_token);
+      localStorage.setItem("userId", res.user_id);
+
+      toast.success("Login berhasil");
+      navigate("/");
     } catch (err) {
-      toast.error(err.message || 'Login gagal');
+      toast.error(err.message || "Login gagal");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={container}>
-      <div onClick={onBack} style={backBtn}>←</div>
+    <div style={loginStyles.container}>
+      <button
+        type="button"
+        onClick={onBack}
+        style={loginStyles.backBtn}
+        aria-label="Kembali"
+      >
+        ←
+      </button>
 
-      <div style={card}>
-        <h2 style={title}>LOGIN</h2>
+      <form style={loginStyles.card} onSubmit={handleSubmit}>
+        <h2 style={loginStyles.title}>LOGIN</h2>
 
-        <Input
-          label="email"
-          name="email"
-          value={form.email}
-          onChange={handleChange}
-          error={errors.email}
-        />
-
-        <Input
-          label="password"
-          type="password"
-          name="password"
-          value={form.password}
-          onChange={handleChange}
-          error={errors.password}
-        />
-
-        <div style={{ textAlign: 'right', marginTop: -4, marginBottom: 10 }}>
-          <Link
-            to="/forgot-password"
-            style={{ fontSize: 12, color: '#1a73e8', textDecoration: 'none' }}
-          >
-            Lupa password?
-          </Link>
+        <div style={loginStyles.field}>
+          <label style={loginStyles.label} htmlFor="login-email">
+            email:
+          </label>
+          <input
+            id="login-email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            style={loginStyles.input}
+          />
+          {errors.email && <div style={loginStyles.error}>{errors.email}</div>}
         </div>
 
-        <button disabled={loading} style={btn} onClick={handleSubmit}>
-          {loading ? 'Loading...' : 'masuk'}
-        </button>
-      </div>
+        <div style={loginStyles.field}>
+          <label style={loginStyles.label} htmlFor="login-password">
+            password:
+          </label>
+          <input
+            id="login-password"
+            type="password"
+            name="password"
+            value={form.password}
+            onChange={handleChange}
+            style={loginStyles.input}
+          />
+          {errors.password && (
+            <div style={loginStyles.error}>{errors.password}</div>
+          )}
+        </div>
+
+        <div style={loginStyles.actions}>
+          <button type="submit" disabled={loading} style={loginStyles.button}>
+            {loading ? "loading" : "masuk"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

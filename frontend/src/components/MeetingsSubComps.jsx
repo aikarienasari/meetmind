@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { toast } from "react-toastify";
 import * as Sentry from "@sentry/react";
+import { isMockMode, mockAnalyzeMeeting, mockCreateMeeting } from "../mocks/mockData.js";
 import {
   updateMeeting,
   getRegenCount,
@@ -63,7 +64,7 @@ export function DropZone({ onFile, meetingId, onMeetingIdChange, onAudioUpload, 
   const [fileName, setFileName] = useState(null);
   const inputRef = useRef();
 
-  const handleFile = (file) => {
+  const handleFile = useCallback((file) => {
     if (!file) return;
     setFileName(file.name);
     
@@ -74,14 +75,14 @@ export function DropZone({ onFile, meetingId, onMeetingIdChange, onAudioUpload, 
       reader.onload = (e) => onFile(e.target.result);
       reader.readAsText(file);
     }
-  };
+  }, [onAudioUpload, onFile]);
 
   const onDrop = useCallback((e) => {
     e.preventDefault();
     setDragging(false);
     const file = e.dataTransfer.files[0];
     handleFile(file);
-  }, []);
+  }, [handleFile]);
 
   const onDragOver = (e) => { e.preventDefault(); setDragging(true); };
   const onDragLeave = () => setDragging(false);
@@ -255,6 +256,22 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
 
     try {
       let actualMeetingId = localMeetingId;
+
+      if (isMockMode()) {
+        if (!actualMeetingId) {
+          const created = await mockCreateMeeting(meetingTitle || "Meeting Tanpa Judul");
+          actualMeetingId = created.meeting_id;
+          setLocalMeetingId(actualMeetingId);
+        }
+
+        const data = await mockAnalyzeMeeting({
+          meetingId: actualMeetingId,
+          title: meetingTitle || "Meeting Tanpa Judul",
+          transcript: activeTranscript,
+        });
+        setResult(data);
+        return;
+      }
 
       // Only create meeting if we don't have one yet
       if (!actualMeetingId) {
@@ -467,7 +484,15 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
         {recommendations.map((rec, index) => {
           // Handle jika recommendation adalah object
           if (typeof rec === 'object' && rec !== null) {
-            return <li key={index}>{rec.text || rec.recommendation || JSON.stringify(rec)}</li>;
+            const mainText = rec.title || rec.text || rec.recommendation || 'Rekomendasi';
+            const detail = rec.detail || rec.description;
+            return (
+              <li key={index}>
+                <strong>{mainText}</strong>
+                {detail && ` - ${detail}`}
+                {rec.priority && ` [Priority: ${rec.priority}]`}
+              </li>
+            );
           }
           // Handle jika recommendation adalah string
           return <li key={index}>{rec}</li>;
@@ -652,7 +677,7 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
           onClick={handleAnalyze}
           disabled={loading || !activeTranscript.trim()}
         >
-          {loading ? "⏳ Memproses..." : "📤 Kirim ke API"}
+          {loading ? "⏳ Memproses..." : "📤 Analisis AI"}
         </button>
 
         {/* Export (3.25) */}
@@ -718,14 +743,13 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
         </div>
       )}
 
-      {(result || loading || error) && (
-        <div className="ai-result">
-          {loading ? (
-            <span className="ai-placeholder">Mengirim transkrip ke API...</span>
-          ) : error ? (
-            <pre className="ai-output" style={{color: 'red'}}>Error: {error}</pre>
-          ) : result ? (
-            <div className="ai-output">
+      <div className="ai-result">
+        {loading ? (
+          <span className="ai-placeholder">Mengirim transkrip ke API...</span>
+        ) : error ? (
+          <pre className="ai-output" style={{color: 'red'}}>Error: {error}</pre>
+        ) : result ? (
+          <div className="ai-output">
               <h3>{result.title || "Hasil Analisis"}</h3>
 
               {result.summary && (
@@ -773,10 +797,11 @@ export function AIPanel({ transcript, uploadedTranscript, meetingTitle, recordin
                   <p>{new Date(result.created_at).toLocaleString()}</p>
                 </>
               )}
-            </div>
-          ) : null}
-        </div>
-      )}
+          </div>
+        ) : (
+          <span className="ai-placeholder">Hasil analisis AI akan muncul di sini...</span>
+        )}
+      </div>
 
       {/* Modal Export (task 3.25) — lazy-loaded */}
       <Suspense fallback={null}>

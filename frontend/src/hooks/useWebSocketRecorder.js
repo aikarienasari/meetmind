@@ -132,7 +132,7 @@ export function useWebSocketRecorder({
             return;
           }
           
-        } catch (e) {
+        } catch {
           console.warn("Failed to parse WebSocket message:", event.data);
         }
       };
@@ -195,7 +195,11 @@ export function useWebSocketRecorder({
     if (streamRef.current) {
       if (streamRef.current.customTracksToStop) {
         streamRef.current.customTracksToStop.forEach(track => {
-          try { track.stop(); } catch(e) {}
+          try {
+            track.stop();
+          } catch (err) {
+            console.warn("Error stopping custom track:", err);
+          }
         });
       }
       streamRef.current.getTracks().forEach(track => {

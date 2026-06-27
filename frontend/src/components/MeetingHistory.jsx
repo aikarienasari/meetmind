@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { isMockMode, mockMeetings } from '../mocks/mockData';
 
 export function MeetingHistory() {
   const [meetings, setMeetings] = useState([]);
@@ -8,6 +9,11 @@ export function MeetingHistory() {
   useEffect(() => {
     const fetchMeetings = async () => {
       try {
+        if (isMockMode()) {
+          setMeetings(mockMeetings);
+          return;
+        }
+
         const userId = localStorage.getItem('userId');
         if (!userId) {
           throw new Error('User tidak ditemukan');

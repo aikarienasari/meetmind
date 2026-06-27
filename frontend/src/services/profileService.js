@@ -21,6 +21,7 @@
  */
 import { createClient } from '@supabase/supabase-js'
 import { isSupabaseConfigured } from './supabaseClient'
+import { isMockMode, mockUser } from '../mocks/mockData'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -81,7 +82,7 @@ const rawUpdateUserMetadata = async (metadata) => {
     try {
       const body = await res.json()
       msg = body?.msg || body?.message || body?.error_description || msg
-    } catch (_) {
+    } catch {
       /* ignore parse error */
     }
     throw new Error(msg)
@@ -93,6 +94,8 @@ const rawUpdateUserMetadata = async (metadata) => {
  * Ambil user saat ini + metadata.
  */
 export const getProfile = async () => {
+  if (isMockMode()) return mockUser
+
   if (!isSupabaseConfigured()) {
     throw new Error('Supabase belum dikonfigurasi. Cek VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY.')
   }
@@ -119,6 +122,8 @@ export const getProfile = async () => {
  * Update nama tampilan (disimpan di user_metadata.full_name).
  */
 export const updateDisplayName = async (fullName) => {
+  if (isMockMode()) return { ...mockUser, full_name: fullName }
+
   await rawUpdateUserMetadata({ full_name: fullName })
   // Baca ulang supaya return shape konsisten
   return getProfile()
@@ -128,6 +133,8 @@ export const updateDisplayName = async (fullName) => {
  * Toggle notifikasi (disimpan di user_metadata.notifications_enabled).
  */
 export const setNotifications = async (enabled) => {
+  if (isMockMode()) return { ...mockUser, notifications_enabled: enabled }
+
   await rawUpdateUserMetadata({ notifications_enabled: enabled })
   return getProfile()
 }
@@ -138,6 +145,8 @@ export const setNotifications = async (enabled) => {
  * Setelah upload, update user_metadata.avatar_url lewat raw HTTP.
  */
 export const uploadAvatar = async (file) => {
+  if (isMockMode()) return URL.createObjectURL(file)
+
   if (!file) throw new Error('File tidak boleh kosong')
   const client = userClient()
   const access_token = getAccessToken()
